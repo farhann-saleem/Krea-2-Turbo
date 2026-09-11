@@ -10,18 +10,39 @@ R2 layout (bucket comfy):
 """
 from __future__ import annotations
 
+import sys
+print(">>> handler.py starting", flush=True)
+print(f">>> Python {sys.version}", flush=True)
+
 import base64
 import json
 import os
 import shutil
 import subprocess
-import sys
 import time
 from pathlib import Path
 
-import boto3
-import requests
-import runpod
+try:
+    import boto3
+    print(">>> boto3 ok", flush=True)
+except Exception as e:
+    print(f">>> boto3 FAILED: {e}", flush=True)
+    sys.exit(1)
+
+try:
+    import requests
+    print(">>> requests ok", flush=True)
+except Exception as e:
+    print(f">>> requests FAILED: {e}", flush=True)
+    sys.exit(1)
+
+try:
+    import runpod
+    print(f">>> runpod ok (version={getattr(runpod, '__version__', '?')})", flush=True)
+except Exception as e:
+    print(f">>> runpod FAILED: {e}", flush=True)
+    sys.exit(1)
+
 from botocore.config import Config
 
 WORKER = "krea"
@@ -292,4 +313,5 @@ def handler(job):
     return {"error": f"unknown op {op}. Use ping or generate."}
 
 
+print(">>> calling runpod.serverless.start()", flush=True)
 runpod.serverless.start({"handler": handler})

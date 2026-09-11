@@ -11,10 +11,10 @@ RUN apt-get update \
         git curl libgl1 libglib2.0-0 libx11-6 libegl1 libgles2 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git ${COMFY_DIR} \
+RUN git clone --branch v0.35.1 --depth 1 https://github.com/Comfy-Org/ComfyUI.git ${COMFY_DIR} \
     && grep -vE '^(torch|torchvision|torchaudio)([=<>]|$)' ${COMFY_DIR}/requirements.txt > /tmp/comfy-req.txt \
     && pip install --no-cache-dir -r /tmp/comfy-req.txt \
-    && pip install --no-cache-dir runpod boto3 requests
+    && pip install --no-cache-dir 'runpod>=1.7.0,<2' boto3 requests
 
 WORKDIR /workspace
 COPY handler.py /handler.py
