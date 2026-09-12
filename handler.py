@@ -46,9 +46,23 @@ def _env(*names: str, default: str = "") -> str:
 
 def _volume_root() -> Path:
     vol = Path("/runpod-volume")
-    if vol.is_dir():
+    # An empty /runpod-volume dir can exist without a volume. Only use it if mounted.
+    if vol.is_dir() and os.path.ismount(str(vol)):
         return vol / "krea2-turbo"
     return COMFY_DIR / "models"
+
+
+def _assert_disk(path: Path, need_gb: float = 22) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    free = shutil.disk_usage(path).free
+    if free < need_gb * 1e9:
+        mounted = os.path.ismount("/runpod-volume")
+        raise RuntimeError(
+            f"Need {need_gb:.0f}GB free, have {free / 1e9:.1f}GB at {path}. "
+            f"/runpod-volume mounted={mounted}. "
+            "Attach a network volume (same DC), then STOP old workers so a new "
+            "worker actually mounts it."
+        )
 
 
 def _r2():
@@ -72,6 +86,7 @@ def _r2():
 
 def _download(key: str, dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
+    _assert_disk(dest.parent)
     if dest.exists() and dest.stat().st_size > 1_000_000:
         print(f"cached {dest.name} ({dest.stat().st_size} bytes)", flush=True)
         return
@@ -255,7 +270,20 @@ def handler(job):
     prompt = (inp.get("prompt") or "").strip()
     op = str(inp.get("op") or ("generate" if prompt else "ping")).lower()
     if op == "ping":
-        return {"ok": True, "worker": WORKER, "comfy_up": _comfy_up()}
+        vol = Path("/runpod-volume")
+        root = _volume_root()
+        try:
+            free_gb = round(shutil.disk_usage(root if root.exists() else Path("/")).free / 1e9, 2)
+        except OSError:
+            free_gb = None
+        return {
+            "ok": True,
+            "worker": WORKER,
+            "comfy_up": _comfy_up(),
+            "volume_mounted": os.path.ismount(str(vol)),
+            "weight_root": str(root),
+            "free_gb": free_gb,
+        }
     if op in {"generate", "sample"}:
         try:
             return generate(inp)
