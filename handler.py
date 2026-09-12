@@ -313,5 +313,14 @@ def handler(job):
     return {"error": f"unknown op {op}. Use ping or generate."}
 
 
-print(">>> calling runpod.serverless.start()", flush=True)
+# --- Worker init: download weights + start ComfyUI BEFORE accepting jobs ---
+print(">>> worker init: downloading weights", flush=True)
+try:
+    ensure_weights()
+    print(">>> weights ready, starting ComfyUI", flush=True)
+    ensure_comfy()
+    print(">>> ComfyUI ready, accepting jobs", flush=True)
+except Exception as e:
+    print(f">>> init warning (will retry on first job): {e}", flush=True)
+
 runpod.serverless.start({"handler": handler})
