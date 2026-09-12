@@ -1,11 +1,22 @@
-# Assignment worker. Code only.
-# Credentials: RunPod endpoint env at runtime — never COPY .env (see rika-voice Dockerfile).
-# Weights: R2 / network volume — never COPY *.safetensors (30 min / 80 GB cap).
-FROM python:3.11-slim
+# Krea-2-Turbo T2I worker. Weights stay on R2 — never COPY .safetensors.
+# Goldmine: youtube/automation/docs/GPU-Image-Guide.md (Comfy + fp8, torch >= 2.5).
+FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
 
-WORKDIR /
-COPY requirements.txt /requirements.txt
-RUN pip install --no-cache-dir -r /requirements.txt
+ENV PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    COMFY_DIR=/workspace/ComfyUI
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git curl libgl1 libglib2.0-0 libx11-6 libegl1 libgles2 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git ${COMFY_DIR} \
+    && grep -vE '^(torch|torchvision|torchaudio)([=<>]|$)' ${COMFY_DIR}/requirements.txt > /tmp/comfy-req.txt \
+    && pip install --no-cache-dir -r /tmp/comfy-req.txt \
+    && pip install --no-cache-dir runpod boto3 requests
+
+WORKDIR /workspace
 COPY handler.py /handler.py
 
 CMD ["python", "-u", "/handler.py"]
