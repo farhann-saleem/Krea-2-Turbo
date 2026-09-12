@@ -1,6 +1,6 @@
 # Krea-2-Turbo T2I worker. Weights stay on R2 — never COPY .safetensors.
 # Goldmine: youtube/automation/docs/GPU-Image-Guide.md (Comfy + fp8, torch >= 2.5).
-FROM pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
+FROM pytorch/pytorch:2.7.0-cuda12.8-cudnn9-runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
