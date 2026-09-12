@@ -9,7 +9,10 @@ ENV PYTHONUNBUFFERED=1 \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git curl libgl1 libglib2.0-0 libx11-6 libegl1 libgles2 \
+        gcc g++ build-essential \
     && rm -rf /var/lib/apt/lists/*
+
+ENV CC=gcc CXX=g++
 
 RUN git clone --branch v0.35.1 --depth 1 https://github.com/Comfy-Org/ComfyUI.git ${COMFY_DIR} \
     && grep -vE '^(torch|torchvision|torchaudio)([=<>]|$)' ${COMFY_DIR}/requirements.txt > /tmp/comfy-req.txt \
